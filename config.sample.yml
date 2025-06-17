@@ -1,0 +1,38 @@
+hosts:
+  - name: "host1"
+    hostname: "myhost1.local" # Hostname of the host to be managed
+    ip: "127.0.0.1" # Ip of host. If not provided, it will be auto-detected based on the host name - optional
+    mac: "00:00:00:00:00:00" # MAC of host. If not provided, it will be auto-detected based on the host name - optional
+
+hosts_policy:
+  status_poll_retry: 3 # Number of retries for host status check after calling wake / shutdown. Default is 3 retries
+  ip_cache_ttl: 3600 # Time to live for the IP cache in seconds. Default is 3600 seconds (1 hour)
+  mac_cache_ttl: 3600 # Time to live for the MAC cache in seconds. Default is 3600 seconds (1 hour)
+  wake_backoff: 600 # Backoff time in seconds after retries. Default is 600 seconds (10 minutes)
+
+ups:
+  - name: ups1
+    nut_id: ups1 # The identifier of the UPS as defined in the NUT configuration (UPS name)
+    nut_host: "127.0.0.1" # Host where the UPS is connected. Default is "127.0.0.1"
+    nut_port: 3493 # Port for the UPS connection. Default is 3493
+    hosts: ["localhost"] # List of hosts to be shut down when the UPS is in critical state
+
+ups_units_policy:
+  wake_cooldown: 180 # Cooldown time in seconds after UPS is back online before waking hosts. Default is 180 seconds (3 minutes)
+  shutdown_threshold: auto # Shutdown threshold. It can be set to a specific percentage or "auto" for automatic threshold. Default is "auto"
+
+wol:
+  port: 9 # Port for Wake-on-LAN. Default is 9
+  broadcast: "255.255.255.255" # Broadcast address for Wake-on-LAN. Default is "255.255.255.255"
+
+ups_poll_interval: 10 # Interval in seconds to poll the UPS status. Default is 10 seconds
+hosts_check_interval: 60 # Interval in seconds to check the hosts status. Default is 60 seconds
+email_notify:
+  sender: "<your_email@example.com>"
+  to: ["<recipient_email@example.com>"]
+  smtp_server: "smtp.example.com"
+  smtp_port: 25
+  use_tls: false
+  use_ssl: false
+  username: "<your_email_username>"
+  password: "<your_email_password>"
