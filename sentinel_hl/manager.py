@@ -5,8 +5,9 @@ import yaml
 import datetime
 import asyncio
 from logging.handlers import TimedRotatingFileHandler
-from sentinel_hl.exceptions import SentinelHlRuntimeError, GracefulExit
+from sentinel_hl.exceptions import SentinelHlRuntimeError, ExitSignal, SIGHUPSignal
 from sentinel_hl.libraries.datastore import Datastore
+from sentinel_hl.libraries.cmd_exec import CmdExec, CmdExecProcessError
 from sentinel_hl.models.sentinel_nl import SentinelHlModel
 from sentinel_hl.services.wol import WolService
 from sentinel_hl.services.host import HostService
@@ -16,14 +17,14 @@ __all__ = ['SentinelHlManager']
 
 class SentinelHlManager:
     def __init__(self, *, log_file: str = '', log_level: str = '', config_file: str = '') -> None:
+        self._log_file: str = log_file
+        self._log_level: str = log_level
+        self._config_file: str = config_file
+        
+        self._logger: logging.Logger = self._logger_factory(self._log_file, self._log_level)
         self._pid_filepath: str = self._get_pid_filepath()
-
-        self._logger: logging.Logger = self._logger_factory(log_file, log_level)
-        self._config: SentinelHlModel = SentinelHlModel(**self._load_config(file=config_file))
-        self._hosts_datastore: Datastore = Datastore(self._get_datastore_filepath('hosts'))
-        self._ups_datastore: Datastore = Datastore(self._get_datastore_filepath('ups'))
-        self._hosts: list[HostService] = self._hosts_factory()
-        self._ups_units: list[UpsService] = self._ups_units_factory()
+        
+        self._init()
 
     def run_once(self) -> None:
         self._run_main(self._do_run_once)
@@ -35,7 +36,16 @@ class SentinelHlManager:
         self._hosts_datastore.clear()
         self._ups_datastore.clear()
         
-        self._logger.info("Caches cleared")
+        self._logger.info("All caches cleared")
+        
+        self._run_main(self._send_reload_signal)
+        
+    def _init(self) -> None:
+        self._config: SentinelHlModel = SentinelHlModel(**self._load_config(file=self._config_file))
+        self._hosts_datastore: Datastore = Datastore(self._get_datastore_filepath('hosts'))
+        self._ups_datastore: Datastore = Datastore(self._get_datastore_filepath('ups'))
+        self._hosts: list[HostService] = self._hosts_factory()
+        self._ups_units: list[UpsService] = self._ups_units_factory()
 
     def _load_config(self, *, file: str = '') -> dict:
         config_files = [
@@ -150,34 +160,56 @@ class SentinelHlManager:
             
         return instances
     
-    def _sigterm_handler(self) -> None:
-        raise GracefulExit
+    def _exit_signal_handler(self) -> None:
+        raise ExitSignal
+    
+    def _sighup_signal_handler(self) -> None:
+        raise SIGHUPSignal
     
     def _run_main(self, main_task, *args, **kwargs) -> None:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        run = True
+        
+        while run:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
 
-        loop.add_signal_handler(signal.SIGTERM, self._sigterm_handler)
-        loop.add_signal_handler(signal.SIGINT, self._sigterm_handler)
-        loop.add_signal_handler(signal.SIGQUIT, self._sigterm_handler)
+            loop.add_signal_handler(signal.SIGTERM, self._exit_signal_handler)
+            loop.add_signal_handler(signal.SIGINT, self._exit_signal_handler)
+            loop.add_signal_handler(signal.SIGQUIT, self._exit_signal_handler)
+            
+            # on signal SIGHUP, reinitialize all data
+            loop.add_signal_handler(signal.SIGHUP, self._sighup_signal_handler)
 
-        try:
-            loop.run_until_complete(main_task(*args, **kwargs))
-        except (GracefulExit) as e:
-            self._logger.info("Received termination signal")
-        except (Exception) as e:
-            self._logger.exception(e)
-        finally:
             try:
-                if os.path.isfile(self._pid_filepath):
-                    os.remove(self._pid_filepath)
-                
-                self._cancel_tasks(loop)
-                loop.run_until_complete(loop.shutdown_asyncgens())
+                loop.run_until_complete(main_task(*args, **kwargs))
+                run = False
+            except (SIGHUPSignal) as e:
+                self._logger.info("Received SIGHUP signal")
+                # reinitialize all data
+                self._init()
+            except (ExitSignal) as e:
+                self._logger.info("Received termination signal")
+                run = False
+            except (Exception) as e:
+                self._logger.exception(e)
+                run = False
             finally:
-                asyncio.set_event_loop(None)
-                loop.close()
-    
+                for ups in self._ups_units:
+                    try:
+                        loop.run_until_complete(ups.disconnect())
+                    except Exception as e:
+                        self._logger.exception(e)
+                        
+                try:
+                    if os.path.isfile(self._pid_filepath):
+                        os.remove(self._pid_filepath)
+                    
+                    self._cancel_tasks(loop)
+                    loop.run_until_complete(loop.shutdown_asyncgens())
+                finally:
+                    asyncio.set_event_loop(None)
+                    loop.close()
+
     def _cancel_tasks(self, loop: asyncio.AbstractEventLoop) -> None:
         tasks = asyncio.all_tasks(loop=loop)
 
@@ -204,7 +236,7 @@ class SentinelHlManager:
         self._logger.info("Running discovery and checks")
         
         await self._discover_hosts()
-        if self._ups_units: await self._poll_ups_units()
+        await self._poll_ups_units()
         await self._check_hosts(run_discovery = False)
         
         return
@@ -227,11 +259,11 @@ class SentinelHlManager:
         self._logger.info("Running initial discovery and checks")
         
         await self._discover_hosts()
-        if self._ups_units: await self._poll_ups_units()
+        await self._poll_ups_units()
         await self._check_hosts(run_discovery = False)
         
         self._logger.info("Starting periodic tasks")
-        if self._ups_units: tasks.append(asyncio.create_task(self._poll_ups_units_task()))
+        tasks.append(asyncio.create_task(self._poll_ups_units_task()))
         tasks.append(asyncio.create_task(self._check_hosts_task()))
 
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -245,6 +277,10 @@ class SentinelHlManager:
 
     async def _poll_ups_units_task(self) -> None:
         run_time = datetime.datetime.now().replace(microsecond=0)
+        
+        if not self._ups_units:
+            self._logger.info("No UPS units configured. Skipping UPS polling task")
+            return
 
         while True:
             # calculate the next scheduled run_time
@@ -304,3 +340,20 @@ class SentinelHlManager:
                 await host.check()
             except Exception as e:
                 self._logger.exception(e)
+                
+    async def _send_reload_signal(self) -> None:
+        if not os.path.isfile(self._pid_filepath):
+            return
+        
+        with open(self._pid_filepath, 'r') as f:
+            pid = f.read().strip()
+            
+        if not pid.isdigit():
+            self._logger.error(f'Invalid PID in {self._pid_filepath}: {pid}')
+            return
+            
+        try:
+            await CmdExec.exec(['kill', '-HUP', pid])
+            self._logger.info(f'Sent reload signal to process {pid}')
+        except CmdExecProcessError as e:
+            self._logger.error(f'Failed to send reload signal to process {pid}: {e}')

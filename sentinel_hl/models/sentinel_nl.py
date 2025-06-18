@@ -7,10 +7,10 @@ from sentinel_hl.models.wol import WolModel
 
 class SentinelHlModel(BaseModel):
     hosts: list[HostModel] = []
-    hosts_policy: HostsPolicyModel = HostsPolicyModel()
+    hosts_policy: HostsPolicyModel = Field(default_factory=HostsPolicyModel)
     ups: list[UpsModel] = []
-    ups_units_policy: UpsUnitsPolicyModel = UpsUnitsPolicyModel()
-    wol: WolModel = WolModel()
+    ups_units_policy: UpsUnitsPolicyModel = Field(default_factory=UpsUnitsPolicyModel)
+    wol: WolModel = Field(default_factory=WolModel)
     ups_poll_interval: int = Field(default=10, ge=5)
     hosts_check_interval: int = Field(default=60, ge=30)
 

@@ -72,7 +72,7 @@ class HostService:
             try:
                 await self.wake()
             except Exception as e:
-                self._logger.error(f'Failed to wake host "{self._host.name}": {e}')
+                self._logger.error(f'Could not wake host "{self._host.name}": {e}')
 
     async def discover(self) -> None:
         if self._cache_ip and self._host.hostname:
@@ -138,7 +138,7 @@ class HostService:
         self._wol.wake_host(self._host)
         self._logger.debug(f'Wake-on-LAN packet sent to {self._host.mac}')
         
-        asyncio.create_task(self._poll_wake())
+        asyncio.create_task(self._poll_wake_ack())
     
     async def shutdown(self) -> None:
         if self._shutdown_in_progress:
@@ -151,7 +151,7 @@ class HostService:
 
         await CmdExec.exec(['shutdown', 'now'], host=CmdExecHost(host=self._host.ip))
 
-        asyncio.create_task(self._poll_shutdown())
+        asyncio.create_task(self._poll_shutdown_ack())
 
     def lock_wake(self, token: str) -> None:
         self._wake_locked.append(token)
@@ -178,16 +178,16 @@ class HostService:
             
         self._persist_cache()
 
-    async def _poll_wake(self) -> None:
+    async def _poll_wake_ack(self) -> None:
         self._wake_in_progress = True
             
         updated = False
         
-        self._logger.debug(f'Polling host "{self._host.name}" status after wake action...')
+        self._logger.debug(f'Polling host "{self._host.name}" status to ack wake action...')
 
-        for _ in range(self._policy.status_poll_retry):
+        for _ in range(self._policy.ack_status_retry):
             # sleep for a while to allow the host to respond
-            await asyncio.sleep(15)
+            await asyncio.sleep(self._policy.ack_status_interval)
             
             await self._check_status()
             
@@ -204,17 +204,17 @@ class HostService:
 
             self._logger.warning(f'Host "{self._host.name}" did not confirm status after wake action. Considering it still down and backing off for {self._policy.wake_backoff}s')
 
-    async def _poll_shutdown(self) -> None:
+    async def _poll_shutdown_ack(self) -> None:
         self._shutdown_in_progress = True
 
         updated = False
-        
-        self._logger.debug(f'Polling host "{self._host.name}" status after shutdown action...')
 
-        for _ in range(self._policy.status_poll_retry):
+        self._logger.debug(f'Polling host "{self._host.name}" status to ack shutdown action...')
+
+        for _ in range(self._policy.ack_status_retry):
             # sleep for a while to allow the host to respond
-            await asyncio.sleep(15)
-            
+            await asyncio.sleep(self._policy.ack_status_interval)
+
             await self._check_status()
             
             if self.status == 'down':

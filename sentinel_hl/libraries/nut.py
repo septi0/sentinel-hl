@@ -92,12 +92,12 @@ class Nut:
             
         except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError) as e:
             self._logger.warning(f'UPS {self._host}:{self._port}: Connection error during poll: {e}')
-            await self._disconnect()
+            await self.disconnect()
             return None
             
         except OSError as e:
             self._logger.error(f'UPS {self._host}:{self._port}: Network error during poll: {e}')
-            await self._disconnect()
+            await self.disconnect()
             return None
             
         except UnicodeDecodeError as e:
@@ -108,7 +108,7 @@ class Nut:
         except EOFError as e:
             self._logger.error(f'UPS {self._host}:{self._port}: EOFError during poll: {e}')
             # Disconnect on EOF to reset the connection
-            await self._disconnect()
+            await self.disconnect()
             return None
         
         except NutError:
@@ -118,7 +118,7 @@ class Nut:
         except Exception as e:
             self._logger.error(f'UPS {self._host}:{self._port}: Unexpected error during poll: {e}')
             # For unexpected errors, disconnect to be safe
-            await self._disconnect()
+            await self.disconnect()
             return None
     
     async def _ensure_connection(self) -> bool:
@@ -131,7 +131,7 @@ class Nut:
         return (self._connected and self._writer is not None and self._reader is not None and not self._writer.is_closing())
     
     async def _connect(self) -> bool:
-        await self._disconnect()
+        await self.disconnect()
         
         try:
             # Attempt to open connection with a timeout
@@ -146,20 +146,20 @@ class Nut:
             
         except asyncio.TimeoutError:
             self._logger.error(f'UPS {self._host}:{self._port}: Connection timeout')
-            await self._disconnect()
+            await self.disconnect()
             return False
             
         except OSError as e:
             self._logger.error(f'UPS {self._host}:{self._port}: Failed to connect: {e}')
-            await self._disconnect()
+            await self.disconnect()
             return False
             
         except Exception as e:
             self._logger.error(f'UPS {self._host}:{self._port}: Unexpected connection error: {e}')
-            await self._disconnect()
+            await self.disconnect()
             return False
     
-    async def _disconnect(self) -> None:
+    async def disconnect(self) -> None:
         self._connected = False
         
         if self._writer and not self._writer.is_closing():

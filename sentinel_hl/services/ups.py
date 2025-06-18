@@ -19,6 +19,8 @@ class UpsService:
         
         self._nut: Nut = Nut(ups.nut_host, ups.nut_port, logger=logger)
         self._cache: dict = self._datastore.get(self._ups.name, {})
+        
+        self._last_status: str | None = None
 
     async def poll(self) -> None:
         try:
@@ -30,16 +32,25 @@ class UpsService:
         if not ups_data:
             return
         
-        if 'OL' in ups_data['ups.status']: # UPS is online
-            self._logger.debug(f'UPS "{self._ups.name}" is online')
-            await self._handle_online_status(ups_data)
-        elif 'OB' in ups_data['ups.status']: # UPS is on battery
-            self._logger.debug(f'UPS "{self._ups.name}" is on battery')
-            await self._handle_onbatt_status(ups_data)
+        if 'OL' in ups_data['ups.status']: await self._handle_online_status(ups_data)
+        elif 'OB' in ups_data['ups.status']: await self._handle_onbatt_status(ups_data)
             
         return
-        
+    
+    async def disconnect(self) -> None:
+        await self._nut.disconnect()
+
     async def _handle_online_status(self, ups_data: dict) -> None:
+        if self._last_status == 'OB':
+            self._logger.info(f'UPS "{self._ups.name}" is back online after being on battery')
+            
+        self._last_status = 'OL'
+        
+        if self._cache.get('onbatt'):
+            # unset on battery info if UPS is back online
+            self._cache['onbatt'] = None
+            self._persist_cache()
+
         if not self._cache.get('hosts_halted'):
             return
         
@@ -64,11 +75,16 @@ class UpsService:
                 host.unlock_wake(self._ups.name)
                 await host.wake()
             except Exception as e:
-                self._logger.error(f'Failed to wake host "{host.name}": {e}')
+                self._logger.error(f'Could not wake host "{host.name}": {e}')
     
     async def _handle_onbatt_status(self, ups_data: dict) -> None:
+        if self._last_status == 'OL':
+            self._logger.info(f'UPS "{self._ups.name}" has switched to battery power')
+        
+        self._last_status = 'OB'
+            
         if self._cache.get('wake_cooldown'):
-            # reset wake cooldown if UPS is on battery
+            # unset wake cooldown if UPS is on battery
             self._cache['wake_cooldown'] = None
             self._persist_cache()
             
@@ -77,10 +93,22 @@ class UpsService:
         if self._cache.get('hosts_halted'):
             return
         
-        if ups_data.get('battery.charge', 0) > self._policy.shutdown_threshold:
-            return
+        if self._policy.shutdown_threshold_unit == 's':
+            # process shutdown based on time left
+            if not self._cache.get('onbatt'):
+                self._cache['onbatt'] = (asyncio.get_event_loop().time(), ups_data.get('battery.charge', 0))
+                self._persist_cache()
+                
+            time_left = self._get_battery_time_left(ups_data)
+            
+            if time_left is None or time_left > self._policy.shutdown_threshold:
+                return
+        elif self._policy.shutdown_threshold_unit == '%':
+            # process shutdown based on battery percentage
+            if ups_data.get('battery.charge', 0) > self._policy.shutdown_threshold:
+                return
 
-        self._logger.warning(f'UPS "{self._ups.name}" is on battery and below shutdown threshold "{self._policy.shutdown_threshold}" ({ups_data.get("battery.charge")}). Initiating shutdown...')
+        self._logger.warning(f'UPS "{self._ups.name}" is on battery and below shutdown threshold "{self._policy.shutdown_threshold}{self._policy.shutdown_threshold_unit}" ({ups_data.get("battery.charge")}). Initiating shutdown...')
 
         for host in self._hosts:
             # skip hosts that are already down
@@ -105,3 +133,20 @@ class UpsService:
         self._datastore.set(self._ups.name, self._cache)
 
         self._logger.debug(f'Cache data for UPS "{self._ups.name}" persisted')
+        
+    def _get_battery_time_left(self, ups_data: dict) -> float | None:
+        onbatt_time, onbatt_charge = self._cache.get('onbatt', (0, 0))
+
+        elapsed = asyncio.get_event_loop().time() - onbatt_time
+        charge_used = onbatt_charge - ups_data.get('battery.charge', 0)
+        
+        if charge_used <= 0 or elapsed <= 0:
+            return None
+        
+        # Calculate time left based on charge used and elapsed time
+        drain_rate = charge_used / elapsed
+        
+        if drain_rate <= 0:
+            return None
+        
+        return ups_data.get('battery.charge', 0) / drain_rate

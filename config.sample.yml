@@ -5,7 +5,8 @@ hosts:
     mac: "00:00:00:00:00:00" # MAC of host. If not provided, it will be auto-detected based on the host name - optional
 
 hosts_policy:
-  status_poll_retry: 3 # Number of retries for host status check after calling wake / shutdown. Default is 3 retries
+  ack_status_interval: 15 # Interval in seconds to check for the status ack after wake / shutdown. Default is 15 seconds
+  ack_status_retry: 3 # Number of retries for status ack check after calling wake / shutdown. Default is 3 retries
   ip_cache_ttl: 3600 # Time to live for the IP cache in seconds. Default is 3600 seconds (1 hour)
   mac_cache_ttl: 3600 # Time to live for the MAC cache in seconds. Default is 3600 seconds (1 hour)
   wake_backoff: 600 # Backoff time in seconds after retries. Default is 600 seconds (10 minutes)
@@ -19,7 +20,7 @@ ups:
 
 ups_units_policy:
   wake_cooldown: 180 # Cooldown time in seconds after UPS is back online before waking hosts. Default is 180 seconds (3 minutes)
-  shutdown_threshold: auto # Shutdown threshold. It can be set to a specific percentage or "auto" for automatic threshold. Default is "auto"
+  shutdown_threshold: "30%" # Shutdown threshold when on battery. Allowed units are % (percentage) and s (seconds). Default is "30%"
 
 wol:
   port: 9 # Port for Wake-on-LAN. Default is 9

@@ -2,14 +2,23 @@
 
 ## Description
 
-**Sentinel-Hl** is ...
+**Sentinel-Hl** is a python script that watches over your infrastructure and ensures that all systems are running and operational. It monitors the status of systems, optionally checks for power outages, and manages the shutdown and wake-up processes of systems based on their status and power availability to ensure minimal downtime and protection against power outages.
+
+It uses WOL (Wake-on-LAN) to wake up systems that are down and polls the NUT (Network UPS Tools) server to check for power outages and shutdown systems if necessary via SSH.
 
 ## Features
-
+- Systems status monitoring (up/down)
+- UPS status and battery charge monitoring
+- Automatic system wake-up using WOL
+- Automatic system shutdown using SSH
+- Automatic system wake-up after power restoration
+- Configurable via a YAML configuration file
 
 ## Software requirements
 
 - python3
+- nut-server (if using UPS monitoring)
+- ssh (if using UPS monitoring)
 
 ## Installation
 
@@ -31,7 +40,11 @@ python setup.py install
 
 ```
 git clone <git-repo>
+cd <git-repo>
+pip install -r requirements.txt
 ```
+
+The recommended way to install Sentinel-Hl is as a package (1) inside a virtual environment.
 
 ## Usage
 

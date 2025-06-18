@@ -9,7 +9,7 @@ StartLimitBurst=3
 Type=simple
 User=root
 Group=root
-ExecStart=/bin/sentinel-hl --log=/var/log/sentinel-hl/sentinel-hl.log --log-level=INFO daemon
+ExecStart=/usr/bin/sentinel-hl --log=/var/log/sentinel-hl/sentinel-hl.log --log-level=INFO daemon
 Restart=on-failure
 RestartSec=5
 
