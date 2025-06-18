@@ -40,6 +40,11 @@ class SentinelHlManager:
         
         self._run_main(self._send_reload_signal)
         
+    def reload(self) -> None:
+        self._logger.info("Reloading the running daemon configuration")
+
+        self._run_main(self._send_reload_signal)
+        
     def _init(self) -> None:
         self._config: SentinelHlModel = SentinelHlModel(**self._load_config(file=self._config_file))
         self._hosts_datastore: Datastore = Datastore(self._get_datastore_filepath('hosts'))

@@ -16,9 +16,11 @@ def main():
 
     subparsers = parser.add_subparsers(title="Commands", dest="command")
     
-    daemon_parser = subparsers.add_parser('daemon', help='Run as daemon and perform actions based on configured jobs')
+    daemon_parser = subparsers.add_parser('daemon', help='Run as daemon')
     
-    clear_caches_parser = subparsers.add_parser('clear-caches', help='Clear all hosts caches')
+    clear_caches_parser = subparsers.add_parser('clear-caches', help='Clear cache')
+
+    reload_parser = subparsers.add_parser('reload', help='Reload running daemon configuration')
     
     args = parser.parse_args()
     
@@ -39,6 +41,8 @@ def main():
         sentinel_hl.run_forever()
     elif args.command == 'clear-caches':
         sentinel_hl.clear_caches()
+    elif args.command == 'reload':
+        sentinel_hl.reload()
     elif args.command is None:
         sentinel_hl.run_once()
 

@@ -73,7 +73,21 @@ Check "Command line arguments" section for more information about the available 
 ## Command line arguments
 
 ```
-sentinel-hl [-h] 
+usage: run.py [-h] [--config CONFIG_FILE] [--log LOG_FILE] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [--version] {daemon,clear-caches,reload} ...
+
+options:
+  -h, --help            show this help message and exit
+  --config CONFIG_FILE  Alternative config file
+  --log LOG_FILE        Log file where to write logs
+  --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Log level
+  --version             show program's version number and exit
+
+Commands:
+  {daemon,clear-caches,reload}
+    daemon              Run as daemon
+    clear-caches        Clear cache
+    reload              Reload running daemon configuration
 ```
 
 ## Configuration file
