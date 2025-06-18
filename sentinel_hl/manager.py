@@ -32,7 +32,7 @@ class SentinelHlManager:
     def run_forever(self) -> None:
         self._run_main(self._do_run_forever)
     
-    def clear_caches(self) -> None:
+    def clear_cache(self) -> None:
         self._hosts_datastore.clear()
         self._ups_datastore.clear()
         
@@ -41,7 +41,7 @@ class SentinelHlManager:
         self._run_main(self._send_reload_signal)
         
     def reload(self) -> None:
-        self._logger.info("Reloading the running daemon configuration")
+        self._logger.info("Reloading the running service")
 
         self._run_main(self._send_reload_signal)
         

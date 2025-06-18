@@ -86,8 +86,8 @@ options:
 Commands:
   {daemon,clear-caches,reload}
     daemon              Run as daemon
-    clear-caches        Clear cache
-    reload              Reload running daemon configuration
+    daemon-reload       Reload running daemon
+    clear-cache        Clear cache
 ```
 
 ## Configuration file
