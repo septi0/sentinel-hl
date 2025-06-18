@@ -52,7 +52,7 @@ class HostService:
         return self._cache.get('status')
     
     async def check(self) -> None:
-        self._logger.debug(f'Checking host "{self.name}"...')
+        self._logger.debug(f'Checking host "{self.name}"')
         
         if not self._host.ip or not self._host.mac:
             self._logger.warning(f'IP or MAC not discovered properly for "{self._host.name}". Skipping check')
@@ -77,7 +77,7 @@ class HostService:
     async def discover(self) -> None:
         if self._cache_ip and self._host.hostname:
             if self._cache.get('ip_expiry', 0) <= asyncio.get_event_loop().time():
-                self._logger.info(f'Attempting to fetch IP address for "{self._host.name}" by hostname "{self._host.hostname}"...')
+                self._logger.info(f'Attempting to fetch IP address for "{self._host.name}" by hostname "{self._host.hostname}"')
 
                 try:
                     ip = await HostDiscovery.get_ip_by_hostname(self._host.hostname)
@@ -96,7 +96,7 @@ class HostService:
                             
         if self._cache_mac and self._host.ip:
             if self._cache.get('mac_expiry', 0) <= asyncio.get_event_loop().time():
-                self._logger.info(f'Attempting to fetch MAC address for "{self._host.name}" by IP address "{self._host.ip}"...')
+                self._logger.info(f'Attempting to fetch MAC address for "{self._host.name}" by IP address "{self._host.ip}"')
 
                 try:
                     mac = await HostDiscovery.get_mac_by_ip(self._host.ip)
@@ -132,7 +132,7 @@ class HostService:
         if self._cache.get('wake_backoff', 0) > asyncio.get_event_loop().time():
             raise HostUpdatePrereqError(f'Host is in backoff')
 
-        self._logger.info(f'Waking up host "{self._host.name}" via Wake-on-LAN ...')
+        self._logger.info(f'Waking up host "{self._host.name}" via Wake-on-LAN')
 
         # try to wake the host up using Wake-on-LAN
         self._wol.wake_host(self._host)
@@ -147,17 +147,17 @@ class HostService:
         if self.status is None or self.status == 'down':
             raise HostUpdatePrereqError(f'Invalid host status ({self.status}). Skipping shutdown')
 
-        self._logger.info(f'Shutting down host "{self._host.name}" ...')
+        self._logger.info(f'Shutting down host "{self._host.name}"')
 
         await CmdExec.exec(['shutdown', 'now'], host=CmdExecHost(host=self._host.ip))
 
         asyncio.create_task(self._poll_shutdown_ack())
 
     def lock_wake(self, token: str) -> None:
-        if token not in self._wake_locked: self._wake_locked.append(token)
+        self._wake_locked.append(token)
 
     def unlock_wake(self, token: str) -> None:
-        if token in self._wake_locked: self._wake_locked.remove(token)
+        self._wake_locked.remove(token)
 
     def _persist_cache(self) -> None:
         if not self._cache:
@@ -183,7 +183,7 @@ class HostService:
             
         updated = False
         
-        self._logger.debug(f'Polling host "{self._host.name}" status to ack wake action...')
+        self._logger.debug(f'Polling host "{self._host.name}" status to ack wake action')
 
         for _ in range(self._policy.ack_status_retry):
             # sleep for a while to allow the host to respond
@@ -209,7 +209,7 @@ class HostService:
 
         updated = False
 
-        self._logger.debug(f'Polling host "{self._host.name}" status to ack shutdown action...')
+        self._logger.debug(f'Polling host "{self._host.name}" status to ack shutdown action')
 
         for _ in range(self._policy.ack_status_retry):
             # sleep for a while to allow the host to respond

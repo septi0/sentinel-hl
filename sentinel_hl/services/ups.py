@@ -68,9 +68,8 @@ class UpsService:
             
         self._cache['hosts_halted'] = False
         self._persist_cache()
-            
-        self._logger.info(f'UPS "{self._ups.name}" is stable. Waking hosts...')
-        
+        self._logger.info(f'UPS "{self._ups.name}" was stable for {self._policy.wake_cooldown}s. Waking hosts')
+
         for host in self._hosts:
             try:
                 host.unlock_wake(self._ups.name)
@@ -98,16 +97,18 @@ class UpsService:
                 self._cache['onbatt'] = (asyncio.get_event_loop().time(), ups_data.get('battery.charge', 0))
                 self._persist_cache()
                 
-            time_left = self._get_battery_time_left(ups_data)
+            current = self._get_battery_time_left(ups_data)
             
-            if time_left is None or time_left > self._policy.shutdown_threshold:
+            if current is None or current > self._policy.shutdown_threshold:
                 return
         elif self._policy.shutdown_threshold_unit == '%':
             # process shutdown based on battery percentage
-            if ups_data.get('battery.charge', 0) > self._policy.shutdown_threshold:
+            current = ups_data.get('battery.charge', 0)
+            
+            if current > self._policy.shutdown_threshold:
                 return
 
-        self._logger.warning(f'UPS "{self._ups.name}" is on battery and below shutdown threshold "{self._policy.shutdown_threshold}{self._policy.shutdown_threshold_unit}" ({ups_data.get("battery.charge")}). Initiating shutdown...')
+        self._logger.warning(f'UPS "{self._ups.name}" is on battery and below shutdown threshold {self._policy.shutdown_threshold}{self._policy.shutdown_threshold_unit} ({current}{self._policy.shutdown_threshold_unit}). Initiating shutdown')
 
         for host in self._hosts:
             # skip hosts that are already down
@@ -148,4 +149,4 @@ class UpsService:
         if drain_rate <= 0:
             return None
         
-        return ups_data.get('battery.charge', 0) / drain_rate
+        return round(ups_data.get('battery.charge', 0) / drain_rate, 2)
