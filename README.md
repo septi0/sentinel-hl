@@ -8,9 +8,9 @@ It uses WOL (Wake-on-LAN) to wake up systems that are down and polls the NUT (Ne
 
 ## Features
 - Systems status monitoring (up/down)
-- UPS status and battery charge monitoring
+- UPS status and battery charge monitoring via NUT server
 - Automatic system wake-up using WOL
-- Automatic system shutdown using SSH
+- Automatic system shutdown via SSH
 - Automatic system wake-up after power restoration
 - Configurable via a YAML configuration file
 
