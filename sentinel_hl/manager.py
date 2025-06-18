@@ -194,11 +194,7 @@ class SentinelHlManager:
                 self._logger.exception(e)
                 run = False
             finally:
-                for ups in self._ups_units:
-                    try:
-                        loop.run_until_complete(ups.disconnect())
-                    except Exception as e:
-                        self._logger.exception(e)
+                loop.run_until_complete(self._disconnect_ups_units())
                         
                 try:
                     if os.path.isfile(self._pid_filepath):
@@ -338,6 +334,13 @@ class SentinelHlManager:
                     await host.discover()
                     
                 await host.check()
+            except Exception as e:
+                self._logger.exception(e)
+    
+    async def _disconnect_ups_units(self) -> None:
+        for ups in self._ups_units:
+            try:
+                await ups.disconnect()
             except Exception as e:
                 self._logger.exception(e)
                 
