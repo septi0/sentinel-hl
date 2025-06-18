@@ -154,10 +154,10 @@ class HostService:
         asyncio.create_task(self._poll_shutdown_ack())
 
     def lock_wake(self, token: str) -> None:
-        self._wake_locked.append(token)
+        if token not in self._wake_locked: self._wake_locked.append(token)
 
     def unlock_wake(self, token: str) -> None:
-        self._wake_locked.remove(token)
+        if token in self._wake_locked: self._wake_locked.remove(token)
 
     def _persist_cache(self) -> None:
         if not self._cache:

@@ -55,14 +55,15 @@ class UpsService:
             return
         
         if not self._cache.get('wake_cooldown'):
-            self._logger.info(f'UPS "{self._ups.name}" is back online. Setting wake cooldown...')
+            self._logger.info(f'Setting wake cooldown...')
             
             self._cache['wake_cooldown'] = asyncio.get_event_loop().time() + self._policy.wake_cooldown
             self._persist_cache()
             return
         
         if self._cache['wake_cooldown'] > asyncio.get_event_loop().time():
-            self._logger.debug(f'UPS "{self._ups.name}" is in cooldown period until')
+            self._logger.debug(f'UPS "{self._ups.name}" is in cooldown period')
+            return
             
         self._cache['hosts_halted'] = False
         self._cache['wake_cooldown'] = None
