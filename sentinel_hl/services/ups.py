@@ -80,7 +80,7 @@ class UpsService:
         if ups_data.get('battery.charge', 0) > self._policy.shutdown_threshold:
             return
 
-        self._logger.warning(f'UPS "{self._ups.name}" is on battery and below shutdown threshold "{self._policy.shutdown_threshold}". Initiating shutdown...')
+        self._logger.warning(f'UPS "{self._ups.name}" is on battery and below shutdown threshold "{self._policy.shutdown_threshold}" ({ups_data.get("battery.charge")}). Initiating shutdown...')
 
         for host in self._hosts:
             # skip hosts that are already down

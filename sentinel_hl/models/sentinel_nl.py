@@ -4,7 +4,6 @@ from sentinel_hl.models.hosts_policy import HostsPolicyModel
 from sentinel_hl.models.ups import UpsModel
 from sentinel_hl.models.ups_units_policy import UpsUnitsPolicyModel
 from sentinel_hl.models.wol import WolModel
-from sentinel_hl.models.email_notify import EmailNotifyModel
 
 class SentinelHlModel(BaseModel):
     hosts: list[HostModel] = []
@@ -14,7 +13,6 @@ class SentinelHlModel(BaseModel):
     wol: WolModel = WolModel()
     ups_poll_interval: int = Field(default=10, ge=5)
     hosts_check_interval: int = Field(default=60, ge=30)
-    email: EmailNotifyModel | None = None
 
     model_config = ConfigDict(extra='forbid')
     

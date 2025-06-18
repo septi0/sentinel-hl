@@ -27,12 +27,3 @@ wol:
 
 ups_poll_interval: 10 # Interval in seconds to poll the UPS status. Default is 10 seconds
 hosts_check_interval: 60 # Interval in seconds to check the hosts status. Default is 60 seconds
-email_notify:
-  sender: "<your_email@example.com>"
-  to: ["<recipient_email@example.com>"]
-  smtp_server: "smtp.example.com"
-  smtp_port: 25
-  use_tls: false
-  use_ssl: false
-  username: "<your_email_username>"
-  password: "<your_email_password>"

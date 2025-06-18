@@ -1,6 +1,6 @@
 __app_name__ = "Sentinel-Hl"
 __package_name__ = "sentinel-hl"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __description__ = "A simple tool that ensures that your infrastructure systems are running and operational."
 __author__ = "Septimiu Ujica"
 __author_email__ = "hellp@septi.ro"
