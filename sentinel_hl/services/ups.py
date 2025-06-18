@@ -20,6 +20,7 @@ class UpsService:
         self._nut: Nut = Nut(ups.nut_host, ups.nut_port, logger=logger)
         self._cache: dict = self._datastore.get(self._ups.name, {})
         
+        self._wake_cooldown: float | None = None
         self._last_status: str | None = None
 
     async def poll(self) -> None:
@@ -42,7 +43,7 @@ class UpsService:
 
     async def _handle_online_status(self, ups_data: dict) -> None:
         if self._last_status == 'OB':
-            self._logger.info(f'UPS "{self._ups.name}" is back online after being on battery')
+            self._logger.info(f'UPS "{self._ups.name}" is back online')
             
         self._last_status = 'OL'
         
@@ -54,19 +55,18 @@ class UpsService:
         if not self._cache.get('hosts_halted'):
             return
         
-        if not self._cache.get('wake_cooldown'):
-            self._logger.info(f'Setting wake cooldown...')
-            
-            self._cache['wake_cooldown'] = asyncio.get_event_loop().time() + self._policy.wake_cooldown
-            self._persist_cache()
+        if not self._wake_cooldown:
+            self._wake_cooldown = asyncio.get_event_loop().time() + self._policy.wake_cooldown
+            self._logger.info(f'Waking up hosts after UPS is stable for {self._policy.wake_cooldown}s')
             return
-        
-        if self._cache['wake_cooldown'] > asyncio.get_event_loop().time():
+
+        if self._wake_cooldown > asyncio.get_event_loop().time():
             self._logger.debug(f'UPS "{self._ups.name}" is in cooldown period')
             return
+        
+        self._wake_cooldown = None
             
         self._cache['hosts_halted'] = False
-        self._cache['wake_cooldown'] = None
         self._persist_cache()
             
         self._logger.info(f'UPS "{self._ups.name}" is stable. Waking hosts...')
@@ -84,11 +84,9 @@ class UpsService:
         
         self._last_status = 'OB'
             
-        if self._cache.get('wake_cooldown'):
+        if self._wake_cooldown:
             # unset wake cooldown if UPS is on battery
-            self._cache['wake_cooldown'] = None
-            self._persist_cache()
-            
+            self._wake_cooldown = None
             return
         
         if self._cache.get('hosts_halted'):
