@@ -9,7 +9,7 @@
 - name: Install/Upgrade Sentinel-Hl
   tags: install_packages
   pip:
-    name: git+ssh://git@github.com:septi0/sentinel-hl.git@production
+    name: git+ssh://git@github.com:septi0/sentinel-hl.git@master
     virtualenv: /opt/sentinel-hl/
     virtualenv_command: /usr/bin/python3 -m venv
     state: latest
