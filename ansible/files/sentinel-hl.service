@@ -1,0 +1,16 @@
+[Unit]
+Description=Sentinel-Hl
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/opt/sentinel-hl/bin/sentinel-hl --log=/var/log/sentinel-hl/sentinel-hl.log --log-level=INFO daemon
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

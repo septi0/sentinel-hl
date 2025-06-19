@@ -1,0 +1,23 @@
+---
+- name: Configure Sentinel-Hl - create systemd unit
+  tags: configure_packages
+  copy:
+    src: sentinel-hl.service
+    dest: /etc/systemd/system/sentinel-hl.service
+  notify: Reload systemd-daemon
+
+- name: Install/Upgrade Sentinel-Hl
+  tags: install_packages
+  pip:
+    name: git+ssh://git@github.com:septi0/sentinel-hl.git@production
+    virtualenv: /opt/sentinel-hl/
+    virtualenv_command: /usr/bin/python3 -m venv
+    state: latest
+  notify: Restart sentinel-hl
+
+- name: Configure Sentinel-Hl - create config directory
+  tags: configure_packages
+  file:
+    path: /etc/opt/sentinel-hl/
+    state: directory
+    mode: 0755

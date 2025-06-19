@@ -1,0 +1,8 @@
+- name: Reload systemd-daemon
+  systemd:
+    daemon_reload: yes
+
+- name: Restart sentinel-hl
+  service:
+    name: sentinel-hl
+    state: restarted
