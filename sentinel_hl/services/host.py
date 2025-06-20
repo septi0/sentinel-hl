@@ -52,7 +52,7 @@ class HostService:
         return self._cache.get('status')
     
     async def check(self) -> None:
-        self._logger.debug(f'Checking host "{self.name}"')
+        self._logger.debug(f'Checking host "{self.name}"...')
         
         if not self._host.ip or not self._host.mac:
             self._logger.warning(f'IP or MAC not discovered properly for "{self._host.name}". Skipping check')
@@ -67,7 +67,7 @@ class HostService:
         if self.status == 'up':
             self._logger.debug(f'Host "{self._host.name}" is up')
         else:
-            self._logger.info(f'Host "{self._host.name}" is down. Attempting to wake it up')
+            self._logger.info(f'Host "{self._host.name}" is down. Attempting to wake it up...')
             
             try:
                 await self.wake()
@@ -77,12 +77,12 @@ class HostService:
     async def discover(self) -> None:
         if self._cache_ip and self._host.hostname:
             if self._cache.get('ip_expiry', 0) <= asyncio.get_event_loop().time():
-                self._logger.info(f'Attempting to fetch IP address for "{self._host.name}" by hostname "{self._host.hostname}"')
+                self._logger.debug(f'Attempting to fetch IP address for "{self._host.name}" by hostname "{self._host.hostname}"...')
 
                 try:
                     ip = await HostDiscovery.get_ip_by_hostname(self._host.hostname)
                     
-                    self._logger.info(f'Found IP address {ip} for "{self._host.name}"')
+                    self._logger.debug(f'Found IP address {ip} for "{self._host.name}"')
 
                     self._cache['ip'] = ip
                     self._cache['ip_expiry'] = asyncio.get_event_loop().time() + self._policy.ip_cache_ttl
@@ -96,12 +96,12 @@ class HostService:
                             
         if self._cache_mac and self._host.ip:
             if self._cache.get('mac_expiry', 0) <= asyncio.get_event_loop().time():
-                self._logger.info(f'Attempting to fetch MAC address for "{self._host.name}" by IP address "{self._host.ip}"')
+                self._logger.debug(f'Attempting to fetch MAC address for "{self._host.name}" by IP address "{self._host.ip}"...')
 
                 try:
                     mac = await HostDiscovery.get_mac_by_ip(self._host.ip)
 
-                    self._logger.info(f'Found MAC address {mac} for "{self._host.name}"')
+                    self._logger.debug(f'Found MAC address {mac} for "{self._host.name}"')
 
                     self._cache['mac'] = mac
                     self._cache['mac_expiry'] = asyncio.get_event_loop().time() + self._policy.mac_cache_ttl
@@ -147,7 +147,7 @@ class HostService:
         if self.status is None or self.status == 'down':
             raise HostUpdatePrereqError(f'Invalid host status ({self.status}). Skipping shutdown')
 
-        self._logger.info(f'Shutting down host "{self._host.name}"')
+        self._logger.info(f'Shutting down host "{self._host.name}"...')
 
         await CmdExec.exec(['shutdown', 'now'], host=CmdExecHost(host=self._host.ip))
 
@@ -183,7 +183,7 @@ class HostService:
             
         updated = False
         
-        self._logger.debug(f'Polling host "{self._host.name}" status to ack wake action')
+        self._logger.debug(f'Polling host "{self._host.name}" status to ack wake action...')
 
         for _ in range(self._policy.ack_status_retry):
             # sleep for a while to allow the host to respond
@@ -209,7 +209,7 @@ class HostService:
 
         updated = False
 
-        self._logger.debug(f'Polling host "{self._host.name}" status to ack shutdown action')
+        self._logger.debug(f'Polling host "{self._host.name}" status to ack shutdown action...')
 
         for _ in range(self._policy.ack_status_retry):
             # sleep for a while to allow the host to respond

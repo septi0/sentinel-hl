@@ -5,6 +5,7 @@ import yaml
 import datetime
 import asyncio
 from logging.handlers import TimedRotatingFileHandler
+from sentinel_hl.utils.logging import DebugLogger
 from sentinel_hl.exceptions import SentinelHlRuntimeError, ExitSignal, SIGHUPSignal
 from sentinel_hl.libraries.datastore import Datastore
 from sentinel_hl.libraries.cmd_exec import CmdExec, CmdExecProcessError
@@ -113,6 +114,9 @@ class SentinelHlManager:
         if not log_level in levels:
             log_level = "INFO"
 
+        if log_level == "DEBUG":
+            logging.setLoggerClass(DebugLogger)
+
         logger = logging.getLogger()
         logger.setLevel(levels[log_level])
 
@@ -127,6 +131,7 @@ class SentinelHlManager:
             handler = logging.StreamHandler()
 
         handler.setLevel(levels[log_level])
+        
         handler.setFormatter(logging.Formatter(format))
 
         logger.addHandler(handler)
@@ -196,7 +201,7 @@ class SentinelHlManager:
                 self._logger.info("Received termination signal")
                 run = False
             except (Exception) as e:
-                self._logger.exception(e)
+                self._logger.error(e)
                 run = False
             finally:
                 loop.run_until_complete(self._disconnect_ups_units())
@@ -234,7 +239,7 @@ class SentinelHlManager:
                 })
                 
     async def _do_run_once(self) -> None:
-        self._logger.info("Running discovery and checks")
+        self._logger.info("Sentinel-Hl started")
         
         await self._discover_hosts()
         await self._poll_ups_units()
@@ -253,17 +258,16 @@ class SentinelHlManager:
         with open(self._pid_filepath, 'w') as f:
             f.write(pid)
 
-        self._logger.info(f'Starting service with pid {pid}')
+        self._logger.info(f'Sentinel-Hl daemon started with pid {pid}')
         
         tasks = []
-        
-        self._logger.info("Running initial discovery and checks")
         
         await self._discover_hosts()
         await self._poll_ups_units()
         await self._check_hosts(run_discovery = False)
         
-        self._logger.info("Starting periodic tasks")
+        self._logger.info("Polling for new events...")
+        
         tasks.append(asyncio.create_task(self._poll_ups_units_task()))
         tasks.append(asyncio.create_task(self._check_hosts_task()))
 
@@ -319,18 +323,21 @@ class SentinelHlManager:
             await self._check_hosts()
             
     async def _discover_hosts(self) -> None:
+        self._logger.info("Running initial hosts discovery...")
+        
         for host in self._hosts:
             try:
                 await host.discover()
+                self._logger.info(f'Host "{host.name}" ip: {host.ip}, MAC: {host.mac}')
             except Exception as e:
-                self._logger.exception(e)
+                self._logger.warning(f'Discovery failed for host "{host.name}": {e}')
                 
     async def _poll_ups_units(self) -> None:
         for ups in self._ups_units:
             try:
                 await ups.poll()
             except Exception as e:
-                self._logger.exception(e)
+                self._logger.error(e)
 
     async def _check_hosts(self, run_discovery: bool = True) -> None:
         for host in self._hosts:
@@ -340,14 +347,17 @@ class SentinelHlManager:
                     
                 await host.check()
             except Exception as e:
-                self._logger.exception(e)
+                self._logger.error(e)
     
     async def _disconnect_ups_units(self) -> None:
         for ups in self._ups_units:
+            if not ups.connected:
+                continue
+                
             try:
                 await ups.disconnect()
             except Exception as e:
-                self._logger.exception(e)
+                self._logger.error(e)
                 
     async def _send_reload_signal(self) -> None:
         if not os.path.isfile(self._pid_filepath):

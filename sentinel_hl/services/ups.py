@@ -22,6 +22,10 @@ class UpsService:
         
         self._wake_cooldown: float | None = None
         self._last_status: str | None = None
+        
+    @property
+    def connected(self) -> bool:
+        return self._nut.connected
 
     async def poll(self) -> None:
         try:

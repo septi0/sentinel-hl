@@ -22,6 +22,11 @@ class Nut:
         self._writer: asyncio.StreamWriter | None = None
         self._reader: asyncio.StreamReader | None = None
         self._connected: bool = False
+        self._initialized: bool = False
+        
+    @property
+    def connected(self) -> bool:
+        return self._connected and self._writer is not None and self._reader is not None and not self._writer.is_closing()
         
     async def get_ups_vars(self, ups_id: str) -> dict | None:
         if not ups_id:
@@ -122,17 +127,17 @@ class Nut:
             return None
     
     async def _ensure_connection(self) -> bool:
-        if self._is_connection_valid():
+        if self.connected:
             return True
             
         return await self._connect()
     
-    def _is_connection_valid(self) -> bool:
-        return (self._connected and self._writer is not None and self._reader is not None and not self._writer.is_closing())
-    
     async def _connect(self) -> bool:
-        await self.disconnect()
-        
+        if self._initialized:
+            await self.disconnect()
+            
+        self._initialized = True
+
         try:
             # Attempt to open connection with a timeout
             self._reader, self._writer = await asyncio.wait_for(
@@ -141,7 +146,7 @@ class Nut:
             )
             
             self._connected = True
-            self._logger.info(f'(Re)connected to UPS {self._host}:{self._port}')
+            self._logger.info(f'UPS connection at {self._host}:{self._port} established')
             return True
             
         except asyncio.TimeoutError:
@@ -171,6 +176,8 @@ class Nut:
         
         self._reader = None
         self._writer = None
+        
+        self._logger.info(f'Closed UPS connection at {self._host}:{self._port}')
         
     async def _readline(self) -> str:
         line = await asyncio.wait_for(self._reader.readuntil(b"\n"), timeout=self._read_timeout) # type: ignore

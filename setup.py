@@ -29,6 +29,7 @@ setup(
         'sentinel_hl.libraries',
         'sentinel_hl.models',
         'sentinel_hl.services',
+        'sentinel_hl.utils',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
