@@ -221,7 +221,7 @@ class HostService:
             self._cache['wake_backoff'] = asyncio.get_event_loop().time() + self._policy.wake_backoff
             self._persist_cache()
 
-            self._logger.warning(f'Host "{self._host.name}" did not confirm status after wake action. Considering it still down and backing off for {self._policy.wake_backoff}s')
+            self._logger.error(f'Host "{self._host.name}" did not confirm status after wake action. Considering it still down and backing off for {self._policy.wake_backoff}s')
 
     async def _poll_shutdown_ack(self) -> None:
         self._shutdown_in_progress = True
