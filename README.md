@@ -6,7 +6,7 @@
 
 It uses WOL (Wake-on-LAN) to wake up systems that are down and polls the NUT (Network UPS Tools) server to check for power outages and shutdown systems if necessary via SSH. After power is restored and stable, it wakes up the systems again.
 
-It can be run as a python package, a standalone script, or as a docker container.
+It can be run as a python package, a standalone script, or as a docker container using image `ghcr.io/septi0/sentinel-hl:latest`.
 
 ## Features
 - Systems status monitoring (up/down)
