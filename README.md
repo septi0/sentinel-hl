@@ -6,6 +6,8 @@
 
 It uses WOL (Wake-on-LAN) to wake up systems that are down and polls the NUT (Network UPS Tools) server to check for power outages and shutdown systems if necessary via SSH. After power is restored and stable, it wakes up the systems again.
 
+It can be run as a python package, a standalone script, or as a docker container.
+
 ## Features
 - Systems status monitoring (up/down)
 - UPS status and battery charge monitoring via NUT server
@@ -14,7 +16,7 @@ It uses WOL (Wake-on-LAN) to wake up systems that are down and polls the NUT (Ne
 - Automatic system wake-up after power restoration
 - Configurable via a YAML configuration file
 
-## Software requirements
+## Software requirements (if running directly on the host, not in a container)
 
 - python3
 - nut-server (if using UPS monitoring)
@@ -45,6 +47,17 @@ pip install -r requirements.txt
 ```
 
 The recommended way to install Sentinel-Hl is as a package (1) inside a virtual environment.
+
+#### 2. As a docker container
+
+```
+docker run -d \
+  --name sentinel-hl \
+  --restart unless-stopped \
+  --volume /path/to/config/folder:/config \
+  --network host \
+  ghcr.io/septi0/sentinel-hl:latest
+```
 
 ## Usage
 
