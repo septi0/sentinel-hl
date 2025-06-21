@@ -50,6 +50,7 @@ class SentinelHlManager:
 
     def _load_config(self, *, file: str = '') -> dict:
         config_files = [
+            '/config/config.yml',
             '/etc/sentinel-hl/config.yml',
             '/etc/opt/sentinel-hl/config.yml',
             os.path.expanduser('~/.config/sentinel-hl/config.yml'),

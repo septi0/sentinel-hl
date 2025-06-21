@@ -35,7 +35,7 @@ or
 ```
 git clone <git-repo>
 cd <git-repo>
-python setup.py install
+pip install .
 ```
 
 #### 2. As a standalone script
@@ -79,6 +79,14 @@ docker run -d \
 
 ```
 <git-clone-dir>/run.py <parameters>
+```
+
+#### 3. As a docker container
+
+**Note!** `run` is just an alias for `sentinel-hl` command inside the container, so you can use it as a shortcut to run the script.
+
+```
+docker exec -it sentinel-hl run <parameters>
 ```
 
 Check "Command line arguments" section for more information about the available parameters.

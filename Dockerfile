@@ -5,16 +5,16 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y build-essential iputils-ping iproute2 openssh-client; \
+RUN apt-get update && apt-get install -y iputils-ping iproute2 openssh-client procps; \
     rm -rf /var/lib/apt/lists/*
 
-COPY ./sentinel_hl ./sentinel_hl
-COPY run.py requirements.txt ./
+COPY . .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade .; \
+    ln -s /usr/local/bin/sentinel-hl /usr/local/bin/run
 
 VOLUME ["/config"]
 
-ENTRYPOINT ["python", "-m", "sentinel_hl", "--config", "/config/config.yml"]
+ENTRYPOINT ["/usr/local/bin/sentinel-hl"]
 
 CMD ["daemon"]
