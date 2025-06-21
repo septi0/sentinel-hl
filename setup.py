@@ -46,4 +46,10 @@ setup(
             'sentinel-hl = sentinel_hl:main',
         ],
     },
+    include_package_data=True,
+    package_data={
+        'sentinel_hl': [
+            'VERSION',
+        ],
+    },
 )
