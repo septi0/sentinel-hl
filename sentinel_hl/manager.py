@@ -5,8 +5,9 @@ import yaml
 import datetime
 import asyncio
 from logging.handlers import TimedRotatingFileHandler
-from sentinel_hl.utils.logging import DebugLogger
 from sentinel_hl.exceptions import SentinelHlRuntimeError, ExitSignal, SIGHUPSignal
+from sentinel_hl.utils.logging import NoExceptionFormatter
+from sentinel_hl.libraries.cleanup_queue import CleanupQueue
 from sentinel_hl.libraries.datastore import Datastore
 from sentinel_hl.libraries.cmd_exec import CmdExec, CmdExecProcessError
 from sentinel_hl.models.sentinel_nl import SentinelHlModel
@@ -23,7 +24,6 @@ class SentinelHlManager:
         self._config_file: str = config_file
         
         self._logger: logging.Logger = self._logger_factory(self._log_file, self._log_level)
-        self._pid_filepath: str = self._get_pid_filepath()
         
         self._init()
 
@@ -48,6 +48,7 @@ class SentinelHlManager:
         
     def _init(self) -> None:
         self._config: SentinelHlModel = SentinelHlModel(**self._load_config(file=self._config_file))
+        self._cleanup: CleanupQueue = CleanupQueue()
         self._hosts_datastore: Datastore = Datastore(self._get_datastore_filepath('hosts'))
         self._ups_datastore: Datastore = Datastore(self._get_datastore_filepath('ups'))
         self._hosts: list[HostService] = self._hosts_factory()
@@ -114,9 +115,6 @@ class SentinelHlManager:
         if not log_level in levels:
             log_level = "INFO"
 
-        if log_level == "DEBUG":
-            logging.setLoggerClass(DebugLogger)
-
         logger = logging.getLogger()
         logger.setLevel(levels[log_level])
 
@@ -132,7 +130,10 @@ class SentinelHlManager:
 
         handler.setLevel(levels[log_level])
         
-        handler.setFormatter(logging.Formatter(format))
+        if log_level == "DEBUG":
+            handler.setFormatter(logging.Formatter(format))
+        else:
+            handler.setFormatter(NoExceptionFormatter(format))
 
         logger.addHandler(handler)
 
@@ -201,15 +202,17 @@ class SentinelHlManager:
                 self._logger.info("Received termination signal")
                 run = False
             except (Exception) as e:
-                self._logger.error(e)
+                self._logger.exception(e)
                 run = False
             finally:
-                loop.run_until_complete(self._disconnect_ups_units())
+                if self._cleanup.has_jobs:
+                    try:
+                        self._logger.info("Running cleanup jobs")
+                        loop.run_until_complete(self._cleanup.consume_all())
+                    except Exception as e:
+                        self._logger.exception(f"Error during cleanup: {e}")
                         
                 try:
-                    if os.path.isfile(self._pid_filepath):
-                        os.remove(self._pid_filepath)
-                    
                     self._cancel_tasks(loop)
                     loop.run_until_complete(loop.shutdown_asyncgens())
                 finally:
@@ -244,19 +247,24 @@ class SentinelHlManager:
         await self._discover_hosts()
         await self._poll_ups_units()
         await self._check_hosts(run_discovery = False)
+        await self._disconnect_ups_units()
         
         return
 
     async def _do_run_forever(self) -> None:
         # run as service
         pid = str(os.getpid())
+        pid_filepath: str = self._get_pid_filepath()
 
-        if os.path.isfile(self._pid_filepath):
+        if os.path.isfile(pid_filepath):
             self._logger.error("Service is already running")
             return
 
-        with open(self._pid_filepath, 'w') as f:
+        with open(pid_filepath, 'w') as f:
             f.write(pid)
+        
+        # register shutdown task that will remove the pid file
+        self._cleanup.push('remove_service_pid', os.remove, pid_filepath)
 
         self._logger.info(f'Sentinel-Hl daemon started with pid {pid}')
         
@@ -265,6 +273,8 @@ class SentinelHlManager:
         await self._discover_hosts()
         await self._poll_ups_units()
         await self._check_hosts(run_discovery = False)
+        
+        self._cleanup.push('disconnect_ups_units', self._disconnect_ups_units)
         
         self._logger.info("Polling for new events...")
         
@@ -278,7 +288,7 @@ class SentinelHlManager:
                 continue
 
             if task.exception() is not None:
-                self._logger.error(f'Task failed with exception: {task.exception()}')
+                self._logger.exception(f'Task failed with exception: {task.exception()}')
 
     async def _poll_ups_units_task(self) -> None:
         run_time = datetime.datetime.now().replace(microsecond=0)
@@ -337,7 +347,7 @@ class SentinelHlManager:
             try:
                 await ups.poll()
             except Exception as e:
-                self._logger.error(e)
+                self._logger.exception(e)
 
     async def _check_hosts(self, run_discovery: bool = True) -> None:
         for host in self._hosts:
@@ -347,7 +357,7 @@ class SentinelHlManager:
                     
                 await host.check()
             except Exception as e:
-                self._logger.error(e)
+                self._logger.exception(e)
     
     async def _disconnect_ups_units(self) -> None:
         for ups in self._ups_units:
@@ -357,17 +367,19 @@ class SentinelHlManager:
             try:
                 await ups.disconnect()
             except Exception as e:
-                self._logger.error(e)
+                self._logger.exception(e)
                 
     async def _send_reload_signal(self) -> None:
-        if not os.path.isfile(self._pid_filepath):
+        pid_filepath: str = self._get_pid_filepath()
+
+        if not os.path.isfile(pid_filepath):
             return
-        
-        with open(self._pid_filepath, 'r') as f:
+
+        with open(pid_filepath, 'r') as f:
             pid = f.read().strip()
             
         if not pid.isdigit():
-            self._logger.error(f'Invalid PID in {self._pid_filepath}: {pid}')
+            self._logger.error(f'Invalid PID in {pid_filepath}: {pid}')
             return
             
         try:

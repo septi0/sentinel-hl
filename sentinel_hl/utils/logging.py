@@ -10,11 +10,3 @@ class NoExceptionFormatter(logging.Formatter):
         record.exc_info = exc_info
         
         return formatted
-
-class DebugLogger(logging.Logger):
-    def __init__(self, name, level=logging.NOTSET):
-        super().__init__(name, level)
-
-    def error(self, msg, *args, **kwargs):
-        kwargs.setdefault('exc_info', True)
-        super().error(msg, *args, **kwargs)
