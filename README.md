@@ -81,12 +81,6 @@ docker run -d \
 <git-clone-dir>/run.py <parameters>
 ```
 
-#### 3. As a docker container
-
-```
-docker run --rm -v /path/to/config/folder:/config --network=host ghcr.io/septi0/sentinel-hl:latest <parameters>
-```
-
 Check "Command line arguments" section for more information about the available parameters.
 
 ## Command line arguments
