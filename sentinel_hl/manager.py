@@ -24,8 +24,6 @@ class SentinelHlManager:
         self._config_file: str = config_file
         
         self._logger: logging.Logger = self._logger_factory(self._log_file, self._log_level)
-        
-        self._init()
 
     def run_once(self) -> None:
         self._run_main(self._do_run_once)
@@ -34,17 +32,10 @@ class SentinelHlManager:
         self._run_main(self._do_run_forever)
     
     def clear_cache(self) -> None:
-        self._hosts_datastore.clear()
-        self._ups_datastore.clear()
-        
-        self._logger.info("All caches cleared")
-        
-        self._run_main(self._send_reload_signal)
+        self._run_main(self._do_clear_cache)
         
     def reload(self) -> None:
-        self._logger.info("Reloading the running service")
-
-        self._run_main(self._send_reload_signal)
+        self._run_main(self._do_reload)
         
     def _init(self) -> None:
         self._config: SentinelHlModel = SentinelHlModel(**self._load_config(file=self._config_file))
@@ -181,6 +172,8 @@ class SentinelHlManager:
         run = True
         
         while run:
+            self._init()
+            
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
@@ -196,8 +189,6 @@ class SentinelHlManager:
                 run = False
             except (SIGHUPSignal) as e:
                 self._logger.info("Received SIGHUP signal")
-                # reinitialize all data
-                self._init()
             except (ExitSignal) as e:
                 self._logger.info("Received termination signal")
                 run = False
@@ -369,6 +360,19 @@ class SentinelHlManager:
             except Exception as e:
                 self._logger.exception(e)
                 
+    async def _do_clear_cache(self) -> None:
+        self._hosts_datastore.clear()
+        self._ups_datastore.clear()
+        
+        self._logger.info("All caches cleared")
+        
+        await self._send_reload_signal()
+        
+    async def _do_reload(self) -> None:
+        self._logger.info("Reloading the running service")
+
+        await self._send_reload_signal()
+
     async def _send_reload_signal(self) -> None:
         pid_filepath: str = self._get_pid_filepath()
 
