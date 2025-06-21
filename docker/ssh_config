@@ -1,0 +1,4 @@
+Host *
+    IdentityFile /ssh_keys/id_ed25519
+    User root
+    Port 22
