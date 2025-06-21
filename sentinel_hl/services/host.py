@@ -51,8 +51,16 @@ class HostService:
     def status(self) -> str | None:
         return self._cache.get('status')
     
+    @property
+    def acknowledged(self) -> bool:
+        return self._cache.get('ack', False)
+    
     async def check(self) -> None:
         self._logger.debug(f'Checking host "{self.name}"...')
+
+        if self.acknowledged:
+            self._logger.debug(f'Host "{self._host.name}" is acknowledged as down. Skipping check')
+            return
         
         if not self._host.ip or not self._host.mac:
             self._logger.warning(f'IP or MAC not discovered properly for "{self._host.name}". Skipping check')
@@ -158,6 +166,17 @@ class HostService:
 
     def unlock_wake(self, token: str) -> None:
         self._wake_locked.remove(token)
+        
+    def ack(self) -> None:
+        self._cache['ack'] = True
+        self._persist_cache()
+        
+    def clear_ack(self) -> None:
+        if self.acknowledged:
+            del self._cache['ack']
+            self._persist_cache()
+        else:
+            self._logger.warning(f'No acknowledgment found for host "{self._host.name}" to clear')
 
     def _persist_cache(self) -> None:
         if not self._cache:
@@ -226,3 +245,6 @@ class HostService:
             
         if not updated:
             self._logger.error(f'Host "{self._host.name}" did not confirm status after shutdown action. Considering it still up')
+            
+    def __str__(self) -> str:
+        return self.name

@@ -73,7 +73,7 @@ Check "Command line arguments" section for more information about the available 
 ## Command line arguments
 
 ```
-usage: run.py [-h] [--config CONFIG_FILE] [--log LOG_FILE] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [--version] {daemon,clear-caches,reload} ...
+usage: sentinel-hl [-h] [--config CONFIG_FILE] [--log LOG_FILE] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}] [--version] {daemon,daemon-reload,clear-cache,ack,clear-ack} ...
 
 options:
   -h, --help            show this help message and exit
@@ -84,10 +84,12 @@ options:
   --version             show program's version number and exit
 
 Commands:
-  {daemon,clear-caches,reload}
+  {daemon,daemon-reload,clear-cache,ack,clear-ack}
     daemon              Run as daemon
     daemon-reload       Reload running daemon
     clear-cache         Clear cache
+    ack                 Acknowledge host down
+    clear-ack           Clear acknowledged host
 ```
 
 ## Configuration file

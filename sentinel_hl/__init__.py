@@ -21,7 +21,13 @@ def main():
     daemon_reload_parser = subparsers.add_parser('daemon-reload', help='Reload running daemon')
     
     clear_caches_parser = subparsers.add_parser('clear-cache', help='Clear cache')
-    
+
+    ack_parser = subparsers.add_parser('ack', help='Acknowledge host down')
+    ack_parser.add_argument('host', nargs=1, help='Host to acknowledge down')
+
+    clear_ack_parser = subparsers.add_parser('clear-ack', help='Clear acknowledged host')
+    clear_ack_parser.add_argument('host', nargs=1, help='Host to clear acknowledgment')
+
     args = parser.parse_args()
     
     try:
@@ -43,6 +49,10 @@ def main():
         sentinel_hl.reload()
     elif args.command == 'clear-cache':
         sentinel_hl.clear_cache()
+    elif args.command == 'ack':
+        sentinel_hl.ack_host(args.host[0])
+    elif args.command == 'clear-ack':
+        sentinel_hl.ack_host(args.host[0], clear=True)
     elif args.command is None:
         sentinel_hl.run_once()
 

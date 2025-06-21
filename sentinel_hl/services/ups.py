@@ -22,7 +22,11 @@ class UpsService:
         
         self._wake_cooldown: float | None = None
         self._last_status: str | None = None
-        
+    
+    @property
+    def name(self) -> str:
+        return self._ups.name    
+    
     @property
     def connected(self) -> bool:
         return self._nut.connected
@@ -154,3 +158,6 @@ class UpsService:
             return None
         
         return round(ups_data.get('battery.charge', 0) / drain_rate, 2)
+    
+    def __str__(self) -> str:
+        return self.name

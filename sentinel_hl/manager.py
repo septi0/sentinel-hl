@@ -37,6 +37,9 @@ class SentinelHlManager:
     def reload(self) -> None:
         self._run_main(self._do_reload)
         
+    def ack_host(self, name: str, clear: bool = False) -> None:
+        self._run_main(self._do_ack_host, name, clear=clear)
+
     def _init(self) -> None:
         self._config: SentinelHlModel = SentinelHlModel(**self._load_config(file=self._config_file))
         self._cleanup: CleanupQueue = CleanupQueue()
@@ -296,7 +299,7 @@ class SentinelHlManager:
             time_left = (run_time - datetime.datetime.now()).total_seconds()
 
             if time_left > 0:
-                self._logger.debug(f'UPS polling in {time_left} s')
+                self._logger.debug(f'Sleeping for {time_left}s until next UPS poll')
                 await asyncio.sleep(time_left)
             else:
                 self._logger.debug('Running UPS polling now')
@@ -315,7 +318,7 @@ class SentinelHlManager:
             time_left = (run_time - datetime.datetime.now()).total_seconds()
 
             if time_left > 0:
-                self._logger.debug(f'Hosts check run in {time_left} s')
+                self._logger.debug(f'Sleeping for {time_left}s until next hosts check')
                 await asyncio.sleep(time_left)
             else:
                 self._logger.debug('Running hosts check now')
@@ -330,6 +333,9 @@ class SentinelHlManager:
             try:
                 await host.discover()
                 self._logger.info(f'Host "{host.name}" ip: {host.ip}, MAC: {host.mac}')
+                
+                if host.acknowledged:
+                    self._logger.warning(f'Host "{host.name}" is acknowledged as down. Won\'t check its status')
             except Exception as e:
                 self._logger.warning(f'Discovery failed for host "{host.name}": {e}')
                 
@@ -372,6 +378,29 @@ class SentinelHlManager:
         self._logger.info("Reloading the running service")
 
         await self._send_reload_signal()
+        
+    async def _do_ack_host(self, name: str, clear: bool = False) -> None:
+        if not name:
+            self._logger.error("No host specified to acknowledge")
+            return
+        
+        for host in self._hosts:
+            if host.name == name:
+                try:
+                    if clear:
+                        host.clear_ack()
+                        self._logger.info(f'Host "{host}" acknowledgment cleared')
+                    else:
+                        host.ack()
+                        self._logger.info(f'Host "{host}" acknowledged down')
+                except Exception as e:
+                    self._logger.error(f'Failed to acknowledge host "{host}": {e}')
+                    
+                await self._send_reload_signal()
+                    
+                return
+        
+        self._logger.error(f'Host "{host}" not found in configuration')
 
     async def _send_reload_signal(self) -> None:
         pid_filepath: str = self._get_pid_filepath()
