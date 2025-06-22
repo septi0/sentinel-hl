@@ -26,31 +26,7 @@ It can be run as a python package, a standalone script, or as a docker container
 
 ## Installation
 
-#### 1. As a package
-
-```
-pip install --upgrade <git-repo>
-```
-
-or 
-
-```
-git clone <git-repo>
-cd <git-repo>
-pip install .
-```
-
-#### 2. As a standalone script
-
-```
-git clone <git-repo>
-cd <git-repo>
-pip install -r requirements.txt
-```
-
-The recommended way to install Sentinel-Hl is as a package (1) inside a virtual environment.
-
-#### 3. As a docker container
+#### 1. As a docker container
 The docker image is available at `ghcr.io/septi0/sentinel-hl:latest`. It can be deployed using any tool, just make sure that the network is set to host and the configuration folder is mounted to `/config` with a `config.yml` file inside it and provide a volume or bind mount for the SSH keys (if using UPS monitoring functionality). The container runs the script as a daemon, but optionally you can pass alternative commands to do other tasks like clearing the cache, acknowledging hosts, etc.
 
 Sample run command:
@@ -64,32 +40,56 @@ docker run -d \
   ghcr.io/septi0/sentinel-hl:latest
 ```
 
-## Usage
-
-#### 1. As a package (if installed globally)
+#### 2. As a package
 
 ```
-/usr/bin/sentinel-hl <parameters>
+pip install --upgrade <git-repo>
 ```
 
-#### 2. As a package (if installed in a virtualenv)
+or 
 
 ```
-<path-to-venv>/bin/sentinel-hl <parameters>
+git clone <git-repo>
+cd <git-repo>
+pip install .
 ```
 
 #### 3. As a standalone script
 
 ```
-<git-clone-dir>/run.py <parameters>
+git clone <git-repo>
+cd <git-repo>
+pip install -r requirements.txt
 ```
 
-#### 3. As a docker container
+The recommended way to install Sentinel-Hl is as a docker container.
 
-**Note!** `run` is just an alias for `sentinel-hl` command inside the container, so you can use it as a shortcut to run the script.
+## Usage
+
+#### 1. As a docker container
+
+**Note!** `run` is just an alias for `sentinel-hl` command inside the container, so you can use it as a shortcut to run software specific commands.
 
 ```
 docker exec -it sentinel-hl run <parameters>
+```
+
+#### 2. As a package (if installed globally)
+
+```
+/usr/bin/sentinel-hl <parameters>
+```
+
+#### 3. As a package (if installed in a virtualenv)
+
+```
+<path-to-venv>/bin/sentinel-hl <parameters>
+```
+
+#### 4. As a standalone script
+
+```
+<git-clone-dir>/run.py <parameters>
 ```
 
 Check "Command line arguments" section for more information about the available parameters.
