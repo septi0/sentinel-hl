@@ -30,7 +30,11 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Read version from VERSION file
-        run: echo "VERSION=$(cat sentinel_hl/VERSION)" >> $GITHUB_ENV
+        run: |
+          VERSION=$(cat VERSION)
+          MAJOR_MINOR_VERSION=$(echo $VERSION |  cut -d. -f1-2)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "MAJOR_MINOR_VERSION=$MAJOR_MINOR_VERSION" >> $GITHUB_ENV
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -40,4 +44,5 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.MAJOR_MINOR_VERSION }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
