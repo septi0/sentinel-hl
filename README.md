@@ -51,7 +51,7 @@ pip install -r requirements.txt
 The recommended way to install Sentinel-Hl is as a package (1) inside a virtual environment.
 
 #### 3. As a docker container
-The docker image is available at `ghcr.io/septi0/sentinel-hl:latest`. It can be deployed using any tool, just make sure that the network is set to host and the configuration folder is mounted to `/config` with a `config.yml` file inside it. The container runs the script as a daemon, but optionally you can pass alternative commands to do other tasks like clearing the cache, acknowledging hosts, etc.
+The docker image is available at `ghcr.io/septi0/sentinel-hl:latest`. It can be deployed using any tool, just make sure that the network is set to host and the configuration folder is mounted to `/config` with a `config.yml` file inside it and provide a volume or bind mount for the SSH keys (if using UPS monitoring functionality). The container runs the script as a daemon, but optionally you can pass alternative commands to do other tasks like clearing the cache, acknowledging hosts, etc.
 
 Sample run command:
 ```
@@ -59,6 +59,7 @@ docker run -d \
   --name sentinel-hl \
   --restart unless-stopped \
   --volume /path/to/config/folder:/config \
+  --volume /path/to/persist/ssh/keys:/ssh_keys \
   --network host \
   ghcr.io/septi0/sentinel-hl:latest
 ```
