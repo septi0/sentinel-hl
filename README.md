@@ -34,7 +34,7 @@ The docker image is available at `ghcr.io/septi0/sentinel-hl:latest`. It can be 
 
 **Note:** the `network=host` mode is required for the WOL functionality to work properly, as it needs to send magic packets to the network.
 
-Quick start command:
+Quick start docker run command:
 ```
 docker run -d \
   --name sentinel-hl \
