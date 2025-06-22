@@ -1,4 +1,6 @@
 Host *
     IdentityFile /ssh_keys/id_ed25519
-    User root
-    Port 22
+    IdentityFile /ssh_keys/id_rsa
+    IdentityFile /ssh_keys/id_dsa
+    IdentityFile /ssh_keys/id_ecdsa
+    IdentitiesOnly yes
