@@ -73,11 +73,11 @@ The recommended way to install Sentinel-Hl is as a docker container.
 
 #### 1. As a docker container
 
-**Note!** `run` is just an alias for `sentinel-hl` command inside the container, so you can use it as a shortcut to run software specific commands.
-
 ```
 docker exec -it sentinel-hl run <parameters>
 ```
+
+**Note!** `run` is just an alias for `sentinel-hl` command inside the container, so you can use it as a shortcut to run software specific commands.
 
 #### 2. As a package (if installed globally)
 
