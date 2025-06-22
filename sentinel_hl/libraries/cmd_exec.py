@@ -13,21 +13,21 @@ class CmdExecProcessError(Exception):
         self.code = code
         
 class CmdExecHost:
-    def __init__(self, host: str, port: int = 0, user: str = ''):
-        self._host = host
-        self._port = port
-        self._user = user
+    def __init__(self, host: str, port: int | None = None, user: str | None = None):
+        self._host: str = host
+        self._port: int | None = port
+        self._user: str | None = user
 
     @property
     def host(self) -> str:
         return self._host
     
     @property
-    def port(self) -> int:
+    def port(self) -> int  | None:
         return self._port
     
     @property
-    def user(self) -> str:
+    def user(self) -> str | None:
         return self._user
         
     def __repr__(self):
@@ -73,12 +73,12 @@ class CmdExec:
 
         ssh_opts = ['-o', 'PasswordAuthentication=No', '-o', 'BatchMode=yes']
 
-        if host.port:
+        if host.port is not None:
             ssh_opts += ['-p', str(host.port)]
 
         remote = host.host
         
-        if host.user:
+        if host.user is not None:
             remote = f"{host.user}@{remote}"
 
         return ['ssh', *ssh_opts, remote, 'exec', shlex.join(cmd)]

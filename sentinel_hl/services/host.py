@@ -18,6 +18,8 @@ class HostService:
     def __init__(self, host: HostModel, policy: HostsPolicyModel, *, datastore: Datastore, wol: WolService, logger: logging.Logger):
         self._host: HostModel = host
         self._policy: HostsPolicyModel = policy
+        
+        print(self._host)
 
         self._datastore: Datastore = datastore
         self._wol: WolService = wol
@@ -157,7 +159,7 @@ class HostService:
 
         self._logger.info(f'Shutting down host "{self._host.name}"...')
 
-        await CmdExec.exec(['shutdown', 'now'], host=CmdExecHost(host=self._host.ip))
+        await CmdExec.exec(['shutdown', 'now'], host=CmdExecHost(host=self._host.ip, user=self._host.ssh_user, port=self._host.ssh_port))
 
         asyncio.create_task(self._poll_shutdown_ack())
 

@@ -5,6 +5,8 @@ class HostModel(BaseModel):
     hostname: str = ''
     ip: str = ''
     mac: str = ''
+    ssh_user: str | None = None
+    ssh_port: int | None = None
 
     model_config = ConfigDict(extra='forbid')
     
