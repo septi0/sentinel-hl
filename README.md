@@ -45,6 +45,19 @@ docker run -d \
   ghcr.io/septi0/sentinel-hl:latest
 ```
 
+Docker compose:
+```yaml
+services:
+  sentinel-hl:
+    image: ghcr.io/septi0/sentinel-hl:latest
+    container_name: sentinel-hl
+    restart: unless-stopped
+    volumes:
+      - /path/to/config/folder:/config
+      - /path/to/persist/ssh/keys:/ssh_keys
+    network_mode: host
+```
+
 #### 2. As a package
 
 ```
