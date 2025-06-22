@@ -37,7 +37,7 @@ SSH keys will be automatically generated if they are not present in the `/ssh_ke
 **Note:** the `network=host` mode is required for the WOL functionality to work properly, as it needs to send magic packets to the network.
 
 Quick start docker run command:
-```bash
+```
 docker run -d \
   --name sentinel-hl \
   --restart unless-stopped \
