@@ -32,6 +32,8 @@ It can be run as a python package, a standalone script, or as a docker container
 #### 1. As a docker container
 The docker image is available at `ghcr.io/septi0/sentinel-hl:latest`. It can be deployed using any tool, just make sure that the network is set to host and the configuration folder is mounted to `/config` inside the container with a `config.yml` file inside it and provide a volume or bind mount for the SSH keys (if using UPS monitoring functionality) mounted to `/ssh_keys` inside the container. The container runs the script as a daemon, but optionally you can pass alternative commands to do other tasks like clearing the cache, acknowledging hosts, etc.
 
+SSH keys will be automatically generated if they are not present in the `/ssh_keys` folder.
+
 **Note:** the `network=host` mode is required for the WOL functionality to work properly, as it needs to send magic packets to the network.
 
 Quick start docker run command:
@@ -53,8 +55,8 @@ services:
     container_name: sentinel-hl
     restart: unless-stopped
     volumes:
-      - /path/to/config/folder:/config
-      - /path/to/persist/ssh/keys:/ssh_keys
+      - ./config:/config
+      - ./ssh_keys:/ssh_keys
     network_mode: host
 ```
 
