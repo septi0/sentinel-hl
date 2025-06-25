@@ -1,5 +1,11 @@
 # Sentinel-Hl
 
+## Summary
+
+System(s) not responding? Sentinel-Hl will automatically wake them up by sending a magic packet (WoL).
+UPS switched to battery and its charge gets low? Sentinel-Hl will safely shut down the system(s).
+Power restored and stable? Sentinel-Hl will wake them up again.
+
 ## Description
 
 **Sentinel-Hl** is a python script that watches over your infrastructure and ensures that all systems are running. It monitors the status of systems, optionally checks for power outages, and manages the shutdown and wake-up processes of systems based on their status and power availability to ensure minimal downtime and protection against power outages.
@@ -8,9 +14,8 @@ It uses WOL (Wake-on-LAN) to wake up systems that are down and polls the NUT (Ne
 
 It can be run as a python package, a standalone script, or as a docker container using image `ghcr.io/septi0/sentinel-hl:latest`.
 
-**Shortly:** System not responding? Wake it up by sending a magic packet. Power outage? Shutdown the system to protect it from damage. Power restored and stable? Wake it up again.
-
 ## Features
+
 - Systems status monitoring (up/down)
 - UPS status and battery charge monitoring via NUT server
 - Automatic system wake-up using WOL
@@ -19,6 +24,7 @@ It can be run as a python package, a standalone script, or as a docker container
 - Configurable via a YAML configuration file
 
 ## Supported OS:
+
 - Linux
 
 ## Software requirements (if running directly on the host, not in a container)

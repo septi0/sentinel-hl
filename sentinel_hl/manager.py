@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import signal
 import yaml
@@ -76,6 +77,9 @@ class SentinelHlManager:
                 raise SentinelHlRuntimeError(f"Failed to parse config file: {e}")
             
         return config
+    
+    def _is_venv(self) -> bool:
+        return sys.prefix != getattr(sys, 'base_prefix', sys.prefix)
         
     def _get_pid_filepath(self) -> str:
         if os.getuid() == 0:
@@ -84,8 +88,10 @@ class SentinelHlManager:
             return os.path.expanduser('~/.sentinel-hl.pid')
 
     def _get_datastore_filepath(self, name: str) -> str:
-        if os.getuid() == 0:
-            filepath = f'/var/opt/sentinel-hl/{name}.db'
+        if self._is_venv():
+            filepath = os.path.join(sys.prefix, 'var', f'{name}.db')
+        elif os.getuid() == 0:
+            filepath = f'/var/lib/sentinel-hl/{name}.db'
         else:
             filepath = os.path.expanduser(f'~/.sentinel-hl/{name}.db')
 

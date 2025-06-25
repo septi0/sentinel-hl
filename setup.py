@@ -1,6 +1,5 @@
 from setuptools import setup
 
-# import sentinel_hl.info without importing the package
 info = {}
 
 with open("sentinel_hl/info.py") as fp:

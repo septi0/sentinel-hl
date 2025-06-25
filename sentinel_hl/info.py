@@ -1,6 +1,6 @@
 __app_name__ = "Sentinel-Hl"
 __package_name__ = "sentinel-hl"
-__description__ = "A simple tool that watches over your infrastructure and ensures that all systems are running."
+__description__ = "Auto wake-up (WoL), safe shutdown on low UPS battery, auto restart on power restore."
 __author__ = "Septimiu Ujica"
 __author_email__ = "hellp@septi.ro"
 __author_url__ = "https://www.septi.ro"
