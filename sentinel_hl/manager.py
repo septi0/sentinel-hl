@@ -84,8 +84,10 @@ class SentinelHlManager:
     def _get_pid_filepath(self) -> str:
         if os.getuid() == 0:
             return '/var/run/sentinel-hl.pid'
+        elif os.environ.get('XDG_RUNTIME_DIR'):
+            return os.path.join(os.environ['XDG_RUNTIME_DIR'], 'sentinel-hl.pid')
         else:
-            return os.path.expanduser('~/.sentinel-hl.pid')
+            return 'tmp/sentinel-hl.pid'
 
     def _get_datastore_filepath(self, name: str) -> str:
         if self._is_venv():

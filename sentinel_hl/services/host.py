@@ -18,8 +18,6 @@ class HostService:
     def __init__(self, host: HostModel, policy: HostsPolicyModel, *, datastore: Datastore, wol: WolService, logger: logging.Logger):
         self._host: HostModel = host
         self._policy: HostsPolicyModel = policy
-        
-        print(self._host)
 
         self._datastore: Datastore = datastore
         self._wol: WolService = wol
