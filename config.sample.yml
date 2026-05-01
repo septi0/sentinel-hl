@@ -1,10 +1,11 @@
 hosts:
   - name: "host1"
     hostname: "myhost1.local" # Hostname of the host to be managed
-    ip: "127.0.0.1" # Ip of host. If not provided, it will be auto-detected based on the host name - optional
+    ip: "192.168.1.100" # Ip of host. If not provided, it will be auto-detected based on the host name - optional
     mac: "00:00:00:00:00:00" # MAC of host. If not provided, it will be auto-detected based on the host name - optional
     ssh_user: "root" # SSH user for the host - optional
     ssh_port: 22 # SSH port for the host - optional
+    wol_broadcast: "192.168.1.255" # Broadcast address for Wake-on-LAN for this specific host. Overrides the global wol.broadcast setting - optional
 
 hosts_policy:
   ack_status_interval: 15 # Interval in seconds to check for the status ack after wake / shutdown. Default is 15 seconds

@@ -16,4 +16,5 @@ class WolService:
             self._logger.warning(f'Host "{host.name}" does not have a MAC address configured. Cannot wake.')
             return
         
-        send_magic_packet(host.mac, ip_address=self._config.broadcast, port=self._config.port)
+        broadcast = host.wol_broadcast if host.wol_broadcast is not None else self._config.broadcast
+        send_magic_packet(host.mac, ip_address=broadcast, port=self._config.port)
