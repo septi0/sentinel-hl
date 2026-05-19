@@ -30,6 +30,7 @@ class HostService:
         self._wake_locked: list[str] = []
         self._wake_in_progress: bool = False
         self._shutdown_in_progress: bool = False
+        self._dependency_services: list['HostService'] = []
 
     @property
     def name(self) -> str:
@@ -47,6 +48,10 @@ class HostService:
     def mac(self) -> str:
         return self._host.mac
     
+    @property
+    def dependencies(self) -> list[str]:
+        return self._host.dependencies
+
     @property
     def status(self) -> str | None:
         return self._cache.get('status')
@@ -79,6 +84,8 @@ class HostService:
             
             try:
                 await self.wake()
+            except HostUpdatePrereqError as e:
+                self._logger.debug(f'Cannot wake host "{self._host.name}": {e}')
             except Exception as e:
                 self._logger.error(f'Could not wake host "{self._host.name}": {e}')
 
@@ -140,6 +147,11 @@ class HostService:
         if self._cache.get('wake_backoff', 0) > asyncio.get_event_loop().time():
             raise HostUpdatePrereqError(f'Host is in backoff')
 
+        # check if all dependency hosts are up
+        for dep in self._dependency_services:
+            if dep.status != 'up':
+                raise HostUpdatePrereqError(f'Dependency host "{dep.name}" is not up yet')
+
         self._logger.info(f'Waking up host "{self._host.name}" via Wake-on-LAN')
 
         # try to wake the host up using Wake-on-LAN
@@ -161,11 +173,19 @@ class HostService:
 
         asyncio.create_task(self._poll_shutdown_ack())
 
+    def set_dependencies(self, deps: list['HostService']) -> None:
+        self._dependency_services = deps
+
     def lock_wake(self, token: str) -> None:
         self._wake_locked.append(token)
 
     def unlock_wake(self, token: str) -> None:
         self._wake_locked.remove(token)
+
+    def clear_wake_backoff(self) -> None:
+        if 'wake_backoff' in self._cache:
+            del self._cache['wake_backoff']
+            self._persist_cache()
         
     def ack(self) -> None:
         self._cache['ack'] = True
@@ -188,36 +208,37 @@ class HostService:
         self._logger.debug(f'Cache data for host persisted')
         
     async def _check_status(self) -> None:
-        # ping the host to check if it's reachable
         try:
             await CmdExec.ping(self._host.ip, count=1, timeout=5)
             self._cache['status'] = 'up'
-        except CmdExecProcessError as e:
+        except CmdExecProcessError:
             self._cache['status'] = 'down'
-            
+        except Exception as e:
+            self._logger.warning(f'Unexpected error checking status of "{self._host.name}": {e}')
+            self._cache['status'] = 'down'
+
         self._persist_cache()
 
     async def _poll_wake_ack(self) -> None:
         self._wake_in_progress = True
-            
+
         updated = False
-        
+
         self._logger.debug(f'Polling host "{self._host.name}" status to ack wake action...')
 
-        for _ in range(self._policy.ack_status_retry):
-            # sleep for a while to allow the host to respond
-            await asyncio.sleep(self._policy.ack_status_interval)
-            
-            await self._check_status()
-            
-            if self.status == 'up':
-                updated = True   
-                self._logger.info(f'Host "{self._host.name}" confirmed up after wake')
-                break
-            
-        self._wake_in_progress = False
-            
-        if not updated:            
+        try:
+            for _ in range(self._policy.ack_status_retry):
+                await asyncio.sleep(self._policy.ack_status_interval)
+                await self._check_status()
+
+                if self.status == 'up':
+                    updated = True
+                    self._logger.info(f'Host "{self._host.name}" confirmed up after wake')
+                    break
+        finally:
+            self._wake_in_progress = False
+
+        if not updated:
             self._cache['wake_backoff'] = asyncio.get_event_loop().time() + self._policy.wake_backoff
             self._persist_cache()
 
@@ -230,18 +251,17 @@ class HostService:
 
         self._logger.debug(f'Polling host "{self._host.name}" status to ack shutdown action...')
 
-        for _ in range(self._policy.ack_status_retry):
-            # sleep for a while to allow the host to respond
-            await asyncio.sleep(self._policy.ack_status_interval)
+        try:
+            for _ in range(self._policy.ack_status_retry):
+                await asyncio.sleep(self._policy.ack_status_interval)
+                await self._check_status()
 
-            await self._check_status()
-            
-            if self.status == 'down':
-                updated = True
-                self._logger.info(f'Host "{self._host.name}" confirmed down after shutdown')
-                break
-            
-        self._shutdown_in_progress = False
+                if self.status == 'down':
+                    updated = True
+                    self._logger.info(f'Host "{self._host.name}" confirmed down after shutdown')
+                    break
+        finally:
+            self._shutdown_in_progress = False
             
         if not updated:
             self._logger.error(f'Host "{self._host.name}" did not confirm status after shutdown action. Considering it still up')

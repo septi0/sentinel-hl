@@ -6,10 +6,11 @@ hosts:
     ssh_user: "root" # SSH user for the host - optional
     ssh_port: 22 # SSH port for the host - optional
     wol_broadcast: "192.168.1.255" # Broadcast address for Wake-on-LAN for this specific host. Overrides the global wol.broadcast setting - optional
+    dependencies: [] # List of hosts that must be started before this host can be started - optional
 
 hosts_policy:
   ack_status_interval: 15 # Interval in seconds to check for the status ack after wake / shutdown. Default is 15 seconds
-  ack_status_retry: 3 # Number of retries for status ack check after calling wake / shutdown. Default is 3 retries
+  ack_status_retry: 20 # Number of retries for status ack check after calling wake / shutdown. Default is 20 retries (with 15 seconds interval, this means 5 minutes total)
   ip_cache_ttl: 3600 # Time to live for the IP cache in seconds. Default is 3600 seconds (1 hour)
   mac_cache_ttl: 3600 # Time to live for the MAC cache in seconds. Default is 3600 seconds (1 hour)
   wake_backoff: 600 # Backoff time in seconds after retries. Default is 600 seconds (10 minutes)

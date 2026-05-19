@@ -81,6 +81,7 @@ class UpsService:
         for host in self._hosts:
             try:
                 host.unlock_wake(self._ups.name)
+                host.clear_wake_backoff()
                 await host.wake()
             except Exception as e:
                 self._logger.error(f'Could not wake host "{host.name}": {e}')

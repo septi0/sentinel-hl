@@ -156,6 +156,14 @@ class SentinelHlManager:
         for host in self._config.hosts:
             instances.append(HostService(host, self._config.hosts_policy, datastore=self._hosts_datastore, wol=wol, logger=hosts_logger))
 
+        host_map = {h.name: h for h in instances}
+        for host_service in instances:
+            dep_services = [host_map[dep] for dep in host_service.dependencies]
+            host_service.set_dependencies(dep_services)
+            if dep_services:
+                dep_names = ', '.join(dep.name for dep in dep_services)
+                self._logger.debug(f'Host "{host_service.name}" depends on: {dep_names}')
+
         return instances
     
     def _ups_units_factory(self) -> list[UpsService]:

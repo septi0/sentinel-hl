@@ -8,6 +8,7 @@ class HostModel(BaseModel):
     ssh_user: str | None = None
     ssh_port: int | None = None
     wol_broadcast: str | None = None
+    dependencies: list[str] = []
 
     model_config = ConfigDict(extra='forbid')
     

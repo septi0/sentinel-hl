@@ -28,5 +28,32 @@ class SentinelHlModel(BaseModel):
         ups_names = [ups.name for ups in values.ups]
         if len(ups_names) != len(set(ups_names)):
             raise ValueError('UPS names must be unique')
-            
+
+        # validate dependencies reference valid hosts and detect cycles
+        host_map = {host.name: host for host in values.hosts}
+        for host in values.hosts:
+            for dep in host.dependencies:
+                if dep == host.name:
+                    raise ValueError(f'Host "{host.name}" cannot depend on itself')
+                if dep not in host_map:
+                    raise ValueError(f'Host "{host.name}" has unknown dependency "{dep}"')
+
+        def _has_cycle(name: str, visited: set, path: set) -> bool:
+            visited.add(name)
+            path.add(name)
+            for dep in host_map[name].dependencies:
+                if dep not in visited:
+                    if _has_cycle(dep, visited, path):
+                        return True
+                elif dep in path:
+                    return True
+            path.discard(name)
+            return False
+
+        visited: set = set()
+        for host_name in host_map:
+            if host_name not in visited:
+                if _has_cycle(host_name, visited, set()):
+                    raise ValueError('Circular dependency detected in hosts configuration')
+
         return values
